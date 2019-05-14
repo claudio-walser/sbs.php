@@ -33,19 +33,31 @@ class BuildStep
     {
         $result = '';
         foreach ($this->config['input'] as $input) {
-            $path = $this->projectDirectory . '/' . $input;
-            if (!file_exists($path)) {
-                throw new Exception('Should be here: ' . $path);
+
+            switch ($input) {
+                
+                // just use the last commit from whatever repo you use in the current Step
+                case '{last_commit}':
+                    echo 'Just save the last commit as $result';
+                
+                // handle input as files/folders by default
+                default:
+                    $path = $this->projectDirectory . '/' . $input;
+                    if (!file_exists($path)) {
+                        throw new Exception('Should be here: ' . $path);
+                    }
+                    if (is_dir($path)) {
+                        $finder = new Finder();
+                        foreach ($finder->files()->in($path) as $file) {
+                            /** @var SplFileInfo $file */
+                            $result .= md5_file($file->getRealPath());
+                        }
+                    } else {
+                        $result .= md5_file($path);
+                    }
+
             }
-            if (is_dir($path)) {
-                $finder = new Finder();
-                foreach ($finder->files()->in($path) as $file) {
-                    /** @var SplFileInfo $file */
-                    $result .= md5_file($file->getRealPath());
-                }
-            } else {
-                $result .= md5_file($path);
-            }
+
         }
         if ($this->parent) {
             $result .= $this->parent->hash();
